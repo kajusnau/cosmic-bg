@@ -10,6 +10,7 @@ colorgrad.workspace = true
 derive_setters = "0.1.8"
 image.workspace = true
 ron.workspace = true
+xdg = "2.5.2"
 serde = { version = "1.0.219", features = ["derive"] }
 tracing.workspace = true
 

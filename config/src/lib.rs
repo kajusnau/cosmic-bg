@@ -120,6 +120,21 @@ pub enum Source {
     Color(Color),
 }
 
+impl Source {
+    pub fn from_str<S: Into<String>>(s: S) -> Self {
+        let p = PathBuf::from(s.into());
+        if p.is_absolute() {
+            Source::Path(p)
+        } else {
+            let resolved = xdg::BaseDirectories::new()
+                .ok()
+                .and_then(|xdg| xdg.find_data_file(&p))
+                .unwrap_or(p);
+            Source::Path(resolved)
+        }
+    }
+}
+
 impl Entry {
     /// Define a preferred background for a given output device.
     pub fn new(output: String, source: Source) -> Self {
@@ -138,9 +153,7 @@ impl Entry {
     pub fn fallback() -> Self {
         Self {
             output: String::from("all"),
-            source: Source::Path(PathBuf::from(
-                "/usr/share/backgrounds/cosmic/orion_nebula_nasa_heic0601a.jpg",
-            )),
+            source: Source::from_str("backgrounds/cosmic/orion_nebula_nasa_heic0601a.jpg"),
             filter_by_theme: true,
             rotation_frequency: 3600,
             filter_method: FilterMethod::default(),
@@ -252,7 +265,11 @@ impl Config {
             .into_iter()
             .filter_map(|output| context.entry(&["output.", &output].concat()).ok());
 
-        for entry in entries {
+        for mut entry in entries {
+            if let Source::Path(ref p) = entry.source {
+                entry.source = Source::from_str(p.to_string_lossy().to_string());
+            }
+
             self.outputs.insert(entry.output.clone());
             self.backgrounds.push(entry);
         }
